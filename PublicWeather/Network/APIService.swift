@@ -52,22 +52,37 @@ class APIService {
     private func parseWeatherData(_ data: Data) throws -> WeatherPresentationModel {
         let decoder = JSONDecoder()
         let result = try decoder.decode(ResponseModel.self, from: data)
-        print(result.response?.body?.items?.item)
+//        print(result.response?.body?.items?.item)
 
-        guard let item = result.response?.body?.items?.item?.first(where: { $0.category == .t1h }) else {
+        guard let weatherList = result.response?.body?.items?.item else {
             throw URLError(.badServerResponse)
         }
+  
+        let groupedWeather = Dictionary(grouping: weatherList) { item in
+            // Dictionary의 키로 Hashable 타입만 가능 // TODO: 필요성 재고
+            WeatherDateTime(date: item.fcstDate ?? "", time: item.fcstTime ?? "")
+        }
+        let unsortedWeatherSixHours: [Weather] = groupedWeather
+            .compactMap { (_, items) -> Weather? in
+                let temperature = items.first(where: { $0.category == .t1h })?.fcstValue ?? ""
+                let skyValue = items.first(where: { $0.category == .sky })?.fcstValue ?? ""
+                let skyDescription = Sky.getType(forecastValue: skyValue)?.description ?? ""
+                guard !temperature.isEmpty || !skyDescription.isEmpty else { return nil }
+                return Weather(
+                    fcstDate: items.first?.fcstDate ?? "",
+                    fcstTime: items.first?.fcstTime ?? "",
+                    temperature: "\(temperature)°C",
+                    sky: skyDescription
+                )
+            }
+        let weatherSixHours = unsortedWeatherSixHours.sorted { $0.fcstTime < $1.fcstTime }
         
-        // TODO: 옵셔널 값 적절하게 처리
         return WeatherPresentationModel(
-            baseDate: item.baseDate ?? "N/A",
-            baseTime: item.baseTime ?? "N/A",
-            category: item.category ?? .t1h,
-            fcstDate: item.fcstDate ?? "N/A",
-            fcstTime: item.fcstTime ?? "N/A",
-            fcstValue: item.fcstValue ?? "0",
-            nx: item.nx ?? 0,
-            ny: item.ny ?? 0
+            nx: weatherList.first?.nx ?? 0,
+            ny: weatherList.first?.ny ?? 0,
+            baseDate: weatherList.first?.baseDate ?? "N/A",
+            baseTime: weatherList.first?.baseTime ?? "N/A",
+            weatherSixHours: weatherSixHours
         )
     }
 }
