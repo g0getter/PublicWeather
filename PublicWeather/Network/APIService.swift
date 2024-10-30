@@ -21,19 +21,43 @@ class APIService {
         &base_time=\(baseTime)&nx=\(nx)&ny=\(ny)
         """
         
+        // TODO: 에러 처리
         guard let url = URL(string: urlString) else {
             throw URLError(.badURL)
         }
 
-        let (data, _) = try await URLSession.shared.data(from: url)
-        let decoder = JSONDecoder()
-        let response = try decoder.decode(ResponseModel.self, from: data)
-        
-        print(response)
-        guard let item = response.response?.body?.items?.item?.first(where: { $0.category == .t1h }) else {
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
 
+        switch httpResponse.statusCode {
+        case 200...299:
+            return try parseWeatherData(data)  // 파싱 함수 호출
+        // TODO: 에러 세분화 처리
+//        case 400:
+//            // bad request
+//        case 401:
+//            // auth
+//        case 404:
+//            // not found
+//        case 500...599:
+//            // server error
+        default:
+            throw URLError(.unknown)
+        }
+    }
+    
+    private func parseWeatherData(_ data: Data) throws -> WeatherPresentationModel {
+        let decoder = JSONDecoder()
+        let result = try decoder.decode(ResponseModel.self, from: data)
+        print(result.response?.body?.items?.item)
+
+        guard let item = result.response?.body?.items?.item?.first(where: { $0.category == .t1h }) else {
+            throw URLError(.badServerResponse)
+        }
+        
         // TODO: 옵셔널 값 적절하게 처리
         return WeatherPresentationModel(
             baseDate: item.baseDate ?? "N/A",
