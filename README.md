@@ -1,6 +1,6 @@
 # PublicWeather
 
-초단기예보 API를 사용해서 지역의 앞으로 6시간의 날씨를 보여주는 앱
+[초단기예보 API](https://www.data.go.kr/tcs/dss/selectApiDataDetailView.do?publicDataPk=15084084)를 사용해서 지역의 앞으로 6시간의 날씨를 보여주는 앱
 
 <img width="373" alt="image" src="https://github.com/user-attachments/assets/4087fbd6-0dd8-4023-b72b-3163fb83bd1d">
 
