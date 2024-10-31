@@ -9,10 +9,10 @@ import Foundation
 
 class APIService {
     func fetchWeather() async throws -> WeatherPresentationModel {
-        // TODO: baseDate, baseTime 현재 시간으로 변경, nx, ny 현재 위치 기반 or 입력하도록 변경
-        let apiKey = "5ujyxrqUwgiHVUgpCydwjUcl3hkyH%2FiPDyjRCd9nizgwI72jpUtli00JbQZTV4N78CNEwoR0ebFsJ2SP8%2BiI6w%3D%3D" // FIXME: 안전 확인
-        let baseDate = "20241030"
-        let baseTime = "0630"
+        let apiKey = "5ujyxrqUwgiHVUgpCydwjUcl3hkyH%2FiPDyjRCd9nizgwI72jpUtli00JbQZTV4N78CNEwoR0ebFsJ2SP8%2BiI6w%3D%3D" // TODO: 안전 확인
+        let baseDate = Date().yyyyMMdd
+        let baseTime = Date().HHmmOneHourAgo // FIXME: 정책 확인
+        // TODO: nx, ny 현재 위치 기반 or 입력하도록 변경
         let nx = "58"
         let ny = "26"
         let urlString = """
@@ -25,7 +25,7 @@ class APIService {
         guard let url = URL(string: urlString) else {
             throw URLError(.badURL)
         }
-
+        print(url)
         let (data, response) = try await URLSession.shared.data(from: url)
 
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -52,14 +52,14 @@ class APIService {
     private func parseWeatherData(_ data: Data) throws -> WeatherPresentationModel {
         let decoder = JSONDecoder()
         let result = try decoder.decode(ResponseModel.self, from: data)
-//        print(result.response?.body?.items?.item)
+        print(result.response?.body?.items?.item)
 
         guard let weatherList = result.response?.body?.items?.item else {
-            throw URLError(.badServerResponse)
+            throw DataError.emptyData
         }
   
         let groupedWeather = Dictionary(grouping: weatherList) { item in
-            // Dictionary의 키로 Hashable 타입만 가능 // TODO: 필요성 재고
+            // Dictionary의 키로 Hashable 타입만 가능해서 `WeatherDateTime` 생성함 // TODO: 필요성 재고
             WeatherDateTime(date: item.fcstDate ?? "", time: item.fcstTime ?? "")
         }
         let unsortedWeatherSixHours: [Weather] = groupedWeather

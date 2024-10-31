@@ -7,8 +7,6 @@
 
 import Foundation
 
-// TODO: 화면에 맞게 수정
-
 struct WeatherDateTime: Hashable {
     let date: String
     let time: String
